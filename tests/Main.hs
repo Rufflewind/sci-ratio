@@ -176,6 +176,8 @@ test = do
   testOrd "0" EQ "0"
   testOrd "0" LT "1"
   testOrd "0" GT "-1"
+  testOrd "10" LT "11"
+  testOrd "11" GT "10"
   testOrd "-5e2" LT "400"
   testOrd "5e2" GT "400"
   testOrd "3.5e99999" GT "-2"
