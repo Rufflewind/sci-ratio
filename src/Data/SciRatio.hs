@@ -18,7 +18,7 @@ module Data.SciRatio
     ) where
 import Data.Ratio ((%), denominator, numerator)
 import Data.Hashable (Hashable(hashWithSalt))
-import Data.Monoid
+import Data.Monoid (mappend)
 infixr 8 ^!, ^^!
 infixl 7 :^, .^
 infixl 1 ~~
@@ -103,18 +103,17 @@ instance (Real a, Integral b, Ord a) => Ord (SciRatio a b) where
             -- initial comparison via integer logs to handle easy cases where
             -- exponents are wildly different
             ((lremM, ilogM), (lremN, ilogN)) ->
-             let digM = 1 + imLog 10 lremM
-                 digN = 1 + imLog 10 lremN
-             in
               case compare 0 ( b - a
                              + ilogN - ilogM
                              + fromInteger digN - fromInteger digM ) of
                 -- compare directly when the int logs alone aren't enough
                 EQ -> case compare digM digN of
-                        EQ -> compare lremM lremN
-                        LT -> compare lremM (dropLSD (digN - digM) lremN) <> LT
-                        GT -> compare (dropLSD (digM - digN) lremM) lremN <> GT
+                  EQ -> compare lremM lremN
+                  LT -> compare lremM (dropLSD (digN - digM) lremN) `mappend` LT
+                  GT -> compare (dropLSD (digM - digN) lremM) lremN `mappend` GT
                 k  -> k
+              where digM = 1 + imLog 10 lremM
+                    digN = 1 + imLog 10 lremN
 
 instance (Hashable a, Hashable b) => Hashable (SciRatio a b) where
   {-# SPECIALIZE instance Hashable SciRational #-}
@@ -223,8 +222,6 @@ x :^ a ~~ y :^ b = (x * 10 ^^ (a - c), y * 10 ^^ (b - c), c)
 --     * If the input integer is zero, then zeros are returned.
 --     * If the input integer is negative, the significand is negative.
 --
---   This is similar to computing the floored logarithm and its associated
---   remainder.
 intLog :: (Integral a, Integral b) =>
           a                             -- ^ base
        -> a                             -- ^ input integer
@@ -242,24 +239,17 @@ intLog base = go 0 1 0
                 next'' = next `div` 2
 
 -- | Integer log base (c.f. Haskell report 14.4):
-imLog :: Integral a => a ->a -> a
-imLog b n
-  = if n < b then
-      0
-    else
-     let
-       l = 2 * imLog (b*b) n
-     in
-       doDiv (n`div`(b^l)) l
-  where
-    doDiv x l = if x < b then l else doDiv (x`div`b) (l+1)
+imLog :: Integral a => a -> a -> a
+imLog b n | n < b = 0
+          | True  = let l = 2 * imLog (b * b) n in doDiv (n `div` (b ^ l)) l
+  where doDiv x l | x < b = l
+                  | True  = doDiv (x `div` b) (l + 1)
 
 -- | @dropLSD k n@  drops the least @k@ significant decimal digits
 --   from @n@ (by successive division)
 dropLSD :: Integer -> Integer -> Integer
-dropLSD k n
-  | k <= 0    = n
-  | otherwise = dropLSD (k-1) (n `div` 10)
+dropLSD k n | k <= 0    = n
+            | otherwise = dropLSD (k - 1) (n `div` 10)
 
 -- | Convert into canonical form by removing all factors of 2 and 5 from the
 --   denominator and factoring out as many powers of the base as possible.
