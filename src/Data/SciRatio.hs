@@ -14,11 +14,11 @@ module Data.SciRatio
     , fromSciRatio
 
       -- * Miscellaneous utilities
+    , ilogBase
     , intLog
     ) where
 import Data.Ratio ((%), denominator, numerator)
 import Data.Hashable (Hashable(hashWithSalt))
-import Data.Monoid (mappend)
 infixr 8 ^!, ^^!
 infixl 7 :^, .^
 infixl 1 ~~
@@ -84,36 +84,29 @@ instance (Show a, Show b) => Show (SciRatio a b) where
 
 instance (Real a, Integral b, Ord a) => Ord (SciRatio a b) where
   {-# SPECIALIZE instance Ord SciRational #-}
-  compare (x :^ a) (y :^ b) = case compare s t of
-    EQ -> case s of
+  compare (x :^ a) (y :^ b) = case compare sgnX sgnY of
+    EQ -> case sgnX of
       EQ -> EQ
-      LT -> invert thecase
-      GT -> thecase
+      LT -> invert order
+      GT -> order
     k  -> k
     where x'        = toRational x
           y'        = toRational y
-          s         = compare x 0
-          t         = compare y 0
+          sgnX      = compare x 0
+          sgnY      = compare y 0
           absM      = abs (numerator x' * denominator y')
           absN      = abs (numerator y' * denominator x')
           invert GT = LT
           invert EQ = EQ
           invert LT = GT
-          thecase   = case (intLog 10 absM, intLog 10 absN) of
-            -- initial comparison via integer logs to handle easy cases where
-            -- exponents are wildly different
-            ((lremM, ilogM), (lremN, ilogN)) ->
-              case compare 0 ( b - a
-                             + ilogN - ilogM
-                             + fromInteger digN - fromInteger digM ) of
-                -- compare directly when the int logs alone aren't enough
-                EQ -> case compare digM digN of
-                  EQ -> compare lremM lremN
-                  LT -> compare lremM (dropLSD (digN - digM) lremN) `mappend` LT
-                  GT -> compare (dropLSD (digM - digN) lremM) lremN `mappend` GT
-                k  -> k
-              where digM = 1 + imLog 10 lremM
-                    digN = 1 + imLog 10 lremN
+          order     = case (_ilogBase 10 absM, _ilogBase 10 absN) of
+            -- initial comparison via floored logarithms to handle easy cases
+            -- where exponents are wildly different
+            (logM, logN) -> case compare (a + logM) (b + logN) of
+              -- compare directly if the exponents are too close
+              EQ | a >= b    -> compare (absM * 10 ^ (a - b)) absN
+                 | otherwise -> compare absM (absN * 10 ^ (b - a))
+              k              -> k
 
 instance (Hashable a, Hashable b) => Hashable (SciRatio a b) where
   {-# SPECIALIZE instance Hashable SciRational #-}
@@ -238,18 +231,26 @@ intLog base = go 0 1 0
                 next'  = if maxe == 0 then next * 2 else maxe `div` 2
                 next'' = next `div` 2
 
--- | Integer log base (c.f. Haskell report 14.4):
-imLog :: Integral a => a -> a -> a
-imLog b n | n < b = 0
-          | True  = let l = 2 * imLog (b * b) n in doDiv (n `div` (b ^ l)) l
-  where doDiv x l | x < b = l
-                  | True  = doDiv (x `div` b) (l + 1)
+-- | Calculate the floored logarithm of a positive integer.  The base must be
+--   greater than one.
+ilogBase :: (Integral a, Integral b) =>
+            a                           -- ^ base
+         -> a                           -- ^ input integer
+         -> b                           -- ^ floor of the logarithm
+ilogBase b | b < 2     = error ("Data.SciRatio.ilogBase: " ++
+                                "base must be greater than one")
+           | otherwise = _ilogBase b
 
--- | @dropLSD k n@  drops the least @k@ significant decimal digits
---   from @n@ (by successive division)
-dropLSD :: Integer -> Integer -> Integer
-dropLSD k n | k <= 0    = n
-            | otherwise = dropLSD (k - 1) (n `div` 10)
+-- | Same as @'ilogBase'@ but doesn't validate the arguments, so it might loop
+--   forever or return something nonsensical.
+_ilogBase :: (Integral a, Integral b) => a -> a -> b
+_ilogBase = (fst .) . ilogr
+  -- use the trick from section 14.4 of The Haskell 98 Language Report
+  where ilogr b n | n  < b    =      (0, n)
+                  | n' < b    =     (l2, n')
+                  | otherwise = (1 + l2, n' `div` b)
+          where (l, n') = ilogr (b * b) n
+                l2      = l * 2
 
 -- | Convert into canonical form by removing all factors of 2 and 5 from the
 --   denominator and factoring out as many powers of the base as possible.
