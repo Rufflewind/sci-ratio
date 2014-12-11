@@ -225,7 +225,7 @@ isDecimalExponentSymbol = (`elem` "eE\x23e8")
 --
 --   > fraction_slash = [/]
 --
---   Note: @U+002F@ (SOLIDUS), @U+2044@ (FRACTION SLASH), and @U+2215@
---         (DIVISION SLASH) are also accepted.
+--   Note: @U+2044@ (FRACTION SLASH) and @U+2215@ (DIVISION SLASH) are also
+--         accepted.
 isFractionSlash :: Char -> Bool
-isFractionSlash = (`elem` "/\x002f\x2044\x2215")
+isFractionSlash = (`elem` "/\x2044\x2215")
