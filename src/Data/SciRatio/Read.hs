@@ -9,6 +9,20 @@ The functions here parse numbers in a variety of formats.  Examples:
 >>> readSciRational "0xfeedface"      -- result: Just ((4277009102 % 1) .^ 0)
 >>> readSciRational "1e99999999"      -- result: Just ((1 % 1) .^ 99999999)
 
+All the @'ReadP'@ parsers here can be safely used with @'P.gather'@ as they do
+not contain any occurences of @'P.readS_to_P'@.
+
+For writing lexers, a simple regular expression to detect numbers would be:
+
+> [-+]? [.]? [0-9] [-+/.0-9a-zA-Z]*
+
+Note that this is more lenient than what the grammar of @'readNumber'@
+accepts.  If Unicode is supported, one can also include:
+
+  * @U+23E8@ (DECIMAL EXPONENT SYMBOL)
+  * @U+2044@ (FRACTION SLASH) and @U+2215@ (DIVISION SLASH)
+  * @U+2212@ (MINUS SIGN)
+
 -}
 module Data.SciRatio.Read
        (
@@ -125,7 +139,7 @@ readDecimalP = readSignedP $ do
 readIntegerP :: Num a => ReadP a
 readIntegerP = readSignedP readDecP
 
--- | Read a unsigned number in either binary (@0b@), octal (@0o@), decimal,
+-- | Read an unsigned number in either binary (@0b@), octal (@0o@), decimal,
 --   or hexadecimal (@0x@) format:
 --
 --   > unsigned = [0] [bB] [0-1]+
@@ -136,7 +150,7 @@ readIntegerP = readSignedP readDecP
 readUnsignedP :: Num a => ReadP a
 readUnsignedP = readUnsignedP' <++ readDecP
 
--- | Read a unsigned number in either binary (@0b@), octal (@0o@), or
+-- | Read an unsigned number in either binary (@0b@), octal (@0o@), or
 --   hexadecimal (@0x@) format, but /not/ in decimal format.  The prefix is
 --   not case-sensitive.
 readUnsignedP' :: Num a => ReadP a

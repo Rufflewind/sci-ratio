@@ -41,20 +41,20 @@ infixl 1 ~~
 --   - The exponent has type @b@ and should be @'Integral'@.
 --
 --   @'SciRatio'@ behaves in the same way as an ordinary @'Data.Ratio.Ratio'@
---   and supports the same operations.  The main property is that it is moxre
+--   and supports the same operations.  The main property is that it is more
 --   efficient than @'Data.Ratio.Ratio'@ when the exponent is large:
 --
---   >>> read "(5 % 1) .^ 99999999" :: SciRational   -- works fine
---   >>> 5e99999999                 :: Rational      -- takes forever
+--   >>> 5 .^ 99999999 :: SciRational   -- works fine
+--   >>> 5e99999999    :: Rational      -- takes forever
 --
 --   Specialized functions are provided in cases where they can be implemented
 --   more efficiently than the default implementation.
 --
 --   The number is always stored in a unique, canonical form: the significand
 --   shall never contain factors of 2 and 5 simultaneously, and their
---   multiplicities shall always be nonnegative.  (Note that here we treat the
---   significand as a rational number factorized into a product of prime
---   numbers with /integral/ exponents.)
+--   multiplicities shall always be nonnegative.  (The significand is treated
+--   as a rational number factorized into a product of prime numbers with
+--   integral exponents that are not necessarily positive.)
 --
 --   __Note__: If inputs differ greatly in magnitude, @('+')@ and @('-')@ can
 --             be quite slow: complexity is linear with the absolute

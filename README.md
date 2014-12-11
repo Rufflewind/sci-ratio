@@ -43,15 +43,13 @@ Numbers can be pretty-printed in a compact format:
 Installation
 ------------
 
-Simply download this package and use Cabal to install:
+The package is available on [Hackage][doc]:
 
 ```sh
-git clone https://github.com/Rufflewind/sci-ratio
-cd sci-ratio
-cabal install
+cabal install sci-ratio
 ```
 
 [ca]:  https://travis-ci.org/Rufflewind/sci-ratio
 [ci]:  https://travis-ci.org/Rufflewind/sci-ratio.svg?branch=master
-[doc]: http://rufflewind.com/sci-ratio
+[doc]: https://hackage.haskell.org/package/sci-ratio
 [pvp]: https://gist.github.com/Rufflewind/03f4e03f7cfa52b8f07d
