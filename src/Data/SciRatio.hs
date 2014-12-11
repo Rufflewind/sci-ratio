@@ -14,7 +14,10 @@ module Data.SciRatio
     , fromSciRatio
 
       -- * Miscellaneous utilities
+    , factorizeBase
     , ilogBase
+
+      -- * Deprecated
     , intLog
     ) where
 import Data.Ratio ((%), denominator, numerator)
@@ -207,29 +210,41 @@ fromSciRatio (x :^ y) = realToFrac x * 10 ^^ y
 x :^ a ~~ y :^ b = (x * 10 ^^ (a - c), y * 10 ^^ (b - c), c)
   where c = if abs a <= abs b then a else b
 
--- | Extract the largest power of the given base that divides the input
---   integer.  Returns the significand and exponent, satisfying:
+-- | Factorize a nonzero integer into a significand and a power of the base
+--   such that the exponent is maximized:
 --
---   > input_integer = significand * base ^ exponent
+--   > inputInteger = significand * base ^ exponent
 --
---     * If the input integer is zero, then zeros are returned.
---     * If the input integer is negative, the significand is negative.
+--   That is, the significand shall not divisible by the base.  The base must
+--   be greater than one.
+factorizeBase :: (Integral a, Integral b) =>
+                 a                      -- ^ base
+              -> a                      -- ^ input integer
+              -> (a, b)                 -- ^ significand and exponent
+factorizeBase _ 0             = error ("Data.SciRatio.factorizeBase: " ++
+                                       "input integer must be nonzero")
+factorizeBase b n | b  <  2   = error ("Data.SciRatio.factorizeBase: " ++
+                                       "base must be greater than one")
+                  | otherwise = _factorizeBase b n
+
+-- | Same as @'factorizeBase'@ but doesn't validate the arguments, so it might
+--   loop forever or return something nonsensical.
+_factorizeBase :: (Integral a, Integral b) => a -> a -> (a, b)
+_factorizeBase b n | r  /= 0   = (n,    0)
+                   | r' /= 0   = (n'',  e2 + 1)
+                   | otherwise = (n''', e2 + 2)
+  where (n',   r)  = n   `quotRem` b
+        (n'',  e)  = _factorizeBase (b * b) n'
+        (n''', r') = n'' `quotRem` b
+        e2         = e * 2
+
+-- | Alias of @'factorizeBase'@.
 --
-intLog :: (Integral a, Integral b) =>
-          a                             -- ^ base
-       -> a                             -- ^ input integer
-       -> (a, b)                        -- ^ significand and exponent
-intLog base = go 0 1 0
-  where go  _    _   _ 0 = (0, 0)
-        go  _    0   e i = (i, e)
-        go maxe next e i =
-          if i `mod` power == 0
-          then go maxe'   next'  (e + next) (i `div` power)
-          else go next'' next'' e i
-          where power  = base ^ next
-                maxe'  = if maxe == 0 then maxe     else maxe - next
-                next'  = if maxe == 0 then next * 2 else maxe `div` 2
-                next'' = next `div` 2
+--   Note: Despite what the name suggests, the function does /not/ compute the
+--         floored logarithm.
+{-# DEPRECATED intLog "use @'factorizeBase'@ instead." #-}
+intLog :: (Integral a, Integral b) => a -> a -> (a, b)
+intLog = factorizeBase
 
 -- | Calculate the floored logarithm of a positive integer.  The base must be
 --   greater than one.
@@ -259,8 +274,8 @@ canonicalize :: (Fractional a, Real a, Integral b) =>
 canonicalize (0 :^ _) = 0 :^ 0
 canonicalize (r :^ e) =
   let r' = toRational r in
-  case (intLog 10 (numerator r'), intLog 2 (denominator r')) of
-    ((n, ne), (d, e2)) -> case intLog 5 d of
+  case (_factorizeBase 10 (numerator r'), _factorizeBase 2 (denominator r')) of
+    ((n, ne), (d, e2)) -> case _factorizeBase 5 d of
       (d', e5) -> case compare e2 e5 of
         EQ -> fromRational (n % d') :^ (e + ne - e5)
         LT -> fromRational ((n * 2 ^ (e5 - e2)) % d') :^ (e + ne - e5)
