@@ -217,6 +217,8 @@ x :^ a ~~ y :^ b = (x * 10 ^^ (a - c), y * 10 ^^ (b - c), c)
 --
 --   That is, the significand shall not divisible by the base.  The base must
 --   be greater than one.
+--
+--   /Since: 0.2.1/
 factorizeBase :: (Integral a, Integral b) =>
                  a                      -- ^ base
               -> a                      -- ^ input integer
@@ -248,6 +250,8 @@ intLog = factorizeBase
 
 -- | Calculate the floored logarithm of a positive integer.  The base must be
 --   greater than one.
+--
+--   /Since: 0.2.1/
 ilogBase :: (Integral a, Integral b) =>
             a                           -- ^ base
          -> a                           -- ^ input integer
