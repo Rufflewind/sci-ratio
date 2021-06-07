@@ -49,7 +49,7 @@ The package is available on [Hackage][doc]:
 cabal install sci-ratio
 ```
 
-[ca]:  https://travis-ci.org/Rufflewind/sci-ratio
-[ci]:  https://travis-ci.org/Rufflewind/sci-ratio.svg?branch=master
+[ca]:  https://github.com/Rufflewind/sci-ratio/actions/workflows/build.yml
+[ci]:  https://github.com/Rufflewind/sci-ratio/actions/workflows/build.yml/badge.svg
 [doc]: https://hackage.haskell.org/package/sci-ratio
 [pvp]: https://gist.github.com/Rufflewind/03f4e03f7cfa52b8f07d
